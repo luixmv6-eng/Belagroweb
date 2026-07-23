@@ -1,0 +1,12 @@
+node_modules
+dist
+dist-smoke
+.env
+.env.local
+.DS_Store
+*.local
+
+# Contenido y subidas del panel de admin (datos de produccion, no codigo)
+server/data
+server/uploads
+dist-check

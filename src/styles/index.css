@@ -1,0 +1,278 @@
+@import 'tailwindcss';
+
+/* --------------------------------------------------------------------------
+   Belagro design tokens
+   Fuente de verdad: manual de marca. Los tres colores base son Pantone exactos:
+     verde   Pantone 7488 C  #73b548
+     violeta Pantone 2665 C  #815899
+     naranja Pantone 7579 C  #e47828
+   y sus tres "colores oportunidad" (los tintes claros del manual):
+     verde claro   7486 C  #c1daa7
+     violeta claro 2635 C  #beaacf
+     naranja claro  148 C  #f3bf93
+
+   Reparto de roles (accent lock). Los tres colores son iguales en el logo, pero
+   en pantalla necesitan jerarquia distinta o compiten entre si:
+     - VERDE   = unica color de accion. Botones, foco, enlaces, estado activo.
+     - VIOLETA = estructura. Bandas de seccion, curvas, fondos, contornos.
+     - NARANJA = acento de senalizacion, dosis corta. Nunca es un boton, porque
+                 dos colores de accion rompen la lectura de "esto se pulsa".
+   Los tintes son SUPERFICIE (badges, celdas, curvas), nunca texto.
+
+   Los pares de contraste estan verificados contra WCAG AA en ambos temas.
+   El verde y el naranja de marca puros quedan en 2.5:1 y 3.0:1 sobre blanco:
+   es una propiedad de los Pantone, no un error. Por eso todo elemento que los
+   usa de relleno lleva texto casi negro encima y borde o sombra que lo define,
+   y para texto de marca existen las variantes *-text oscurecidas.
+   Radius system: buttons = pill, cards = 16px, inputs = 12px.
+   -------------------------------------------------------------------------- */
+
+:root {
+  color-scheme: light;
+
+  /* Constantes de marca */
+  --brand-lime: #73b548; /* Pantone 7488 C, tal cual el manual */
+  /* Relleno de hover de los botones. Va con texto casi negro encima. */
+  --brand-lime-strong: #5c9636;
+  /* Verde para TEXTO sobre fondo claro. Oscurecido para pasar AA (5.9:1 sobre
+     blanco). El verde de marca no alcanza contraste como texto: no lo use. */
+  --brand-lime-text: #3a641b;
+  --brand-lime-tint: #c1daa7; /* Pantone 7486 C */
+
+  --brand-violet: #815899; /* Pantone 2665 C */
+  --brand-violet-text: #563068;
+  --brand-violet-tint: #beaacf; /* Pantone 2635 C */
+
+  --brand-orange: #e47828; /* Pantone 7579 C */
+  --brand-orange-text: #7d3c06;
+  --brand-orange-tint: #f3bf93; /* Pantone 148 C */
+
+  /* Superficies. Los neutros llevan el matiz del violeta 2665 para que blanco,
+     gris y lavanda pertenezcan a la misma familia y no choquen. */
+  --bg: #ffffff;
+  --surface: #f8f6fa;
+  --surface-violet: #f1ebf6;
+  --surface-violet-deep: #2b1d3a;
+  --surface-card: #ffffff;
+
+  /* Contenido */
+  --fg: #17141c;
+  --fg-muted: #575065;
+  --fg-onviolet: #ffffff;
+  --fg-onviolet-muted: #cabbd8;
+  --fg-onlime: #101c07;
+
+  --border: #e7e0ee;
+  --border-strong: #d2c6de;
+  --ring: var(--brand-lime-strong);
+  --danger: #c22c22;
+  /* Rojo de error legible sobre la banda violeta oscura (8.9:1). */
+  --danger-on-violet: #ff9d92;
+  --success: #2c7a35;
+
+  --shadow-card: 0 1px 2px rgb(43 29 58 / 0.05), 0 12px 32px -12px rgb(43 29 58 / 0.16);
+  --shadow-card-hover: 0 2px 4px rgb(43 29 58 / 0.07), 0 24px 48px -16px rgb(43 29 58 / 0.24);
+
+  /* Halo verde de los elementos de accion. Es token y no un valor suelto en el
+     JSX para que siga al verde de marca cuando cambia el tema. */
+  --shadow-action: 0 8px 24px -10px rgb(115 181 72 / 0.85);
+  --shadow-action-hover: 0 14px 32px -10px rgb(115 181 72 / 0.95);
+  --shadow-action-fab: 0 12px 32px -8px rgb(115 181 72 / 0.7);
+
+  /* Velo del menu movil: negro con el matiz violeta de la marca, no gris azulado. */
+  --scrim: rgb(23 20 28 / 0.55);
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  /* Los Pantone puros se apagan sobre fondo oscuro, asi que suben en claridad
+     manteniendo el matiz. Los tintes se invierten: en oscuro son fondos densos. */
+  --brand-lime: #96cf68;
+  --brand-lime-strong: #abdd83;
+  --brand-lime-text: #a5d97c;
+  --brand-lime-tint: #33491f;
+
+  --brand-violet: #bb9ed0;
+  --brand-violet-text: #c7aed9;
+  --brand-violet-tint: #4b3760;
+
+  --brand-orange: #ef9350;
+  --brand-orange-text: #f0a26a;
+  --brand-orange-tint: #5d3413;
+
+  --bg: #111014;
+  --surface: #1a1820;
+  --surface-violet: #211a2d;
+  --surface-violet-deep: #1b1426;
+  --surface-card: #1d1a24;
+
+  --fg: #f3f1f6;
+  --fg-muted: #a9a2b5;
+  --fg-onviolet: #f5f2f8;
+  --fg-onviolet-muted: #bcafcb;
+  --fg-onlime: #0d1706;
+
+  --border: #2e2938;
+  --border-strong: #3f3950;
+  --ring: #abdd83;
+  --danger: #ff8f84;
+  --danger-on-violet: #ff9d92;
+  --success: #7ecb8a;
+
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.4), 0 12px 32px -12px rgb(0 0 0 / 0.6);
+  --shadow-card-hover: 0 2px 4px rgb(0 0 0 / 0.5), 0 24px 48px -16px rgb(0 0 0 / 0.7);
+
+  /* En oscuro el halo se baja: sobre fondo denso un glow fuerte se lee como neon. */
+  --shadow-action: 0 8px 24px -10px rgb(150 207 104 / 0.4);
+  --shadow-action-hover: 0 14px 32px -10px rgb(150 207 104 / 0.5);
+  --shadow-action-fab: 0 12px 32px -8px rgb(150 207 104 / 0.38);
+
+  --scrim: rgb(6 5 8 / 0.66);
+}
+
+@theme inline {
+  --font-display: 'Outfit Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Source Sans 3 Variable', ui-sans-serif, system-ui, sans-serif;
+
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-violet: var(--surface-violet);
+  --color-surface-violet-deep: var(--surface-violet-deep);
+  --color-card: var(--surface-card);
+
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-on-violet: var(--fg-onviolet);
+  --color-on-violet-muted: var(--fg-onviolet-muted);
+  --color-on-lime: var(--fg-onlime);
+
+  --color-lime: var(--brand-lime);
+  --color-lime-strong: var(--brand-lime-strong);
+  --color-lime-text: var(--brand-lime-text);
+  --color-lime-tint: var(--brand-lime-tint);
+  --color-violet: var(--brand-violet);
+  --color-violet-text: var(--brand-violet-text);
+  --color-violet-tint: var(--brand-violet-tint);
+  --color-orange: var(--brand-orange);
+  --color-orange-text: var(--brand-orange-text);
+  --color-orange-tint: var(--brand-orange-tint);
+
+  --color-line: var(--border);
+  --color-line-strong: var(--border-strong);
+  --color-danger: var(--danger);
+  --color-danger-on-violet: var(--danger-on-violet);
+  --color-success: var(--success);
+
+  --radius-card: 16px;
+  --radius-input: 12px;
+
+  /* Escala para la banda violeta profunda. Existe porque el codigo acumulaba
+     cinco opacidades de borde (/10 /20 /25 /30 /40) y tres de relleno para el
+     mismo trabajo: sin una escala corta, la jerarquia sobre fondo oscuro se
+     vuelve ruido. Dos rellenos y dos lineas cubren todos los casos. */
+  --color-onviolet-fill: rgb(255 255 255 / 0.07);
+  --color-onviolet-fill-strong: rgb(255 255 255 / 0.13);
+  --color-onviolet-line: rgb(255 255 255 / 0.16);
+  /* 38% y no menos: por debajo de 34% el borde de un campo de formulario baja de
+     3:1 sobre la banda y deja de percibirse como control (WCAG 1.4.11). */
+  --color-onviolet-line-strong: rgb(255 255 255 / 0.38);
+}
+
+/* --------------------------------------------------------------------------
+   Ritmo de superficies. Regla unica para que el scroll se lea continuo:
+
+     bg-bg              seccion de lectura por defecto (blanco)
+     bg-surface-violet  seccion agrupadora (lavanda), SIEMPRE entra y sale con <Wave>
+     surface-violet-deep banda de enfasis, SIEMPRE con <Wave> o dentro de una tarjeta
+     bg-surface         NO es fondo de seccion: solo superficie de componente
+                        (huecos de imagen, rellenos de campo)
+
+   Alternar blanco y lavanda con curva en cada cambio es lo que evita el efecto
+   de recortes pegados. Un tercer gris a la misma altura tonal que los otros dos
+   no aporta jerarquia, solo ensucia.
+   -------------------------------------------------------------------------- */
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+
+  ::selection {
+    background: var(--brand-lime);
+    color: var(--fg-onlime);
+  }
+}
+
+@layer components {
+  /* Shared page rhythm. Density dial 4: py-20 mobile, py-28 desktop. */
+  .section {
+    padding-block: 5rem;
+  }
+
+  @media (min-width: 768px) {
+    .section {
+      padding-block: 7rem;
+    }
+  }
+
+  .shell {
+    width: 100%;
+    max-width: 1280px;
+    margin-inline: auto;
+    padding-inline: 1.25rem;
+  }
+
+  @media (min-width: 768px) {
+    .shell {
+      padding-inline: 2.5rem;
+    }
+  }
+
+  .prose-belagro p {
+    color: var(--fg-muted);
+    line-height: 1.75;
+    max-width: 68ch;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

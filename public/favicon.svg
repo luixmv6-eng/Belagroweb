@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Belagro">
+  <!-- Geometria tomada del archivo oficial del logo, no redibujada a ojo.
+       Barras translucidas + tres vertices en los Pantone del manual. -->
+  <g fill="none" stroke-width="13.8" stroke-linecap="round" opacity=".45">
+    <path d="M7 53 32.2 11.1" stroke="#815899" />
+    <path d="M32.2 11.1 56.7 53" stroke="#e47828" />
+    <path d="M7 53H56.7" stroke="#73b548" />
+  </g>
+  <circle cx="32.2" cy="11.1" r="6.9" fill="#e47828" />
+  <circle cx="7" cy="53" r="6.6" fill="#815899" />
+  <circle cx="56.7" cy="53" r="6.7" fill="#73b548" />
+</svg>
