@@ -1,3 +1,5 @@
+import { linkTargets } from '../data/site'
+
 /**
  * Esquema del panel de administración.
  *
@@ -6,7 +8,10 @@
  * algo nuevo basta con añadir un campo aquí; no hay que tocar el panel.
  *
  * Tipos de campo:
- *   text · textarea · number · url · email · tel · image · list
+ *   text · textarea · number · url · email · tel · image · list · toggle · select
+ *
+ * `select` requiere `options: [{ value, label }]`.
+ * `toggle` guarda un booleano.
  *
  * `path` es la ruta dentro de los datos, empezando por la sección
  * (`site`, `media`, `pages`, `nav`, `advisors`, `location`, `clients`).
@@ -122,6 +127,12 @@ export const sections = [
       },
       { path: 'site.emailComercial', label: 'Correo comercial', type: 'email' },
       { path: 'site.emailPqrs', label: 'Correo de PQRS', type: 'email' },
+      {
+        path: 'site.formRecipient',
+        label: 'Correo que recibe los formularios',
+        type: 'email',
+        help: 'A dónde llegan los mensajes de Contacto y Maquila. Si se deja vacío, llegan al correo comercial. No se muestra en la web.',
+      },
     ],
   },
   {
@@ -340,6 +351,53 @@ export const sections = [
       { path: 'pages.home.newsletter.title', label: 'Título', type: 'text' },
       { path: 'pages.home.newsletter.lead', label: 'Descripción', type: 'textarea' },
       { path: 'pages.home.newsletter.highlight', label: 'Línea destacada', type: 'text' },
+    ],
+  },
+
+  {
+    id: 'popup',
+    group: 'estructura',
+    label: 'Aviso emergente',
+    description:
+      'Ventana que aparece al entrar en la web. Llega desactivada: enciéndala solo cuando tenga algo que anunciar.',
+    fields: [
+      {
+        path: 'pages.popup.enabled',
+        label: 'Mostrar el aviso',
+        type: 'toggle',
+        help: 'Con esto apagado, el aviso no se muestra a nadie y el resto de campos queda en espera.',
+      },
+      { path: 'pages.popup.title', label: 'Título', type: 'text' },
+      { path: 'pages.popup.body', label: 'Texto', type: 'textarea' },
+      {
+        path: 'pages.popup.buttonLabel',
+        label: 'Texto del botón',
+        type: 'text',
+        help: 'Déjelo vacío si quiere un aviso sin botón, solo informativo.',
+      },
+      {
+        path: 'pages.popup.buttonTarget',
+        label: 'A dónde lleva el botón',
+        type: 'select',
+        options: linkTargets,
+      },
+      {
+        path: 'pages.popup.frequency',
+        label: 'Con qué frecuencia aparece',
+        type: 'select',
+        options: [
+          { value: 'once', label: 'Una vez y no vuelve a salir' },
+          { value: 'session', label: 'Una vez por visita' },
+          { value: 'always', label: 'Cada vez que se carga la página' },
+        ],
+        help: '"Una vez" es lo recomendable: repetirlo en cada visita cansa y resta credibilidad.',
+      },
+      {
+        path: 'pages.popup.delaySeconds',
+        label: 'Segundos antes de aparecer',
+        type: 'number',
+        help: 'Un margen de 3 a 5 segundos deja que la persona vea la página antes de interrumpirla.',
+      },
     ],
   },
 

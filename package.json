@@ -11,15 +11,18 @@
     "server": "node server/index.js",
     "start": "node server/index.js",
     "admin:password": "node server/set-password.js",
-    "check:schema": "vite build --ssr src/schema-check.js --outDir dist-check --logLevel error && node dist-check/schema-check.js"
+    "check:schema": "vite build --ssr src/schema-check.js --outDir dist-check --logLevel error && node dist-check/schema-check.js",
+    "setup": "npm install && npm run build"
   },
   "dependencies": {
     "@fontsource-variable/outfit": "^5.1.1",
     "@fontsource-variable/source-sans-3": "^5.1.1",
     "@phosphor-icons/react": "^2.1.7",
+    "@vercel/blob": "^2.6.1",
     "express": "^5.2.1",
     "motion": "^12.4.7",
     "multer": "^2.2.0",
+    "nodemailer": "^9.0.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.1.5"
@@ -29,5 +32,8 @@
     "@vitejs/plugin-react": "^4.3.4",
     "tailwindcss": "^4.0.6",
     "vite": "^6.1.0"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

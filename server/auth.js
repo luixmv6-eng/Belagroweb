@@ -1,7 +1,5 @@
 import crypto from 'node:crypto'
-import { promises as fs } from 'node:fs'
-import path from 'node:path'
-import { DATA_DIR } from './store.js'
+import { readSecret } from './storage/index.js'
 
 const COOKIE = 'belagro_admin'
 const SESSION_HOURS = 12
@@ -43,19 +41,10 @@ export function verifyPassword(password, stored) {
 let secretPromise = null
 
 async function getSecret() {
+  // La variable de entorno manda siempre. En serverless es la única opción, y en
+  // disco permite fijarla para que sobreviva a un borrado de la carpeta de datos.
   if (process.env.SESSION_SECRET) return process.env.SESSION_SECRET
-  // Sin variable de entorno se genera uno y se persiste, para que sobreviva a
-  // los reinicios. Si se pierde, solo obliga a volver a entrar.
-  secretPromise ??= (async () => {
-    const file = path.join(DATA_DIR, '.session-secret')
-    try {
-      return await fs.readFile(file, 'utf8')
-    } catch {
-      const secret = crypto.randomBytes(32).toString('hex')
-      await fs.writeFile(file, secret, { mode: 0o600 })
-      return secret
-    }
-  })()
+  secretPromise ??= readSecret()
   return secretPromise
 }
 

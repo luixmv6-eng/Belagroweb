@@ -211,6 +211,55 @@ export function Field({ field, value, onChange }) {
   if (field.type === 'image') return <ImageField field={field} value={value} onChange={onChange} />
   if (field.type === 'list') return <ListField field={field} value={value} onChange={onChange} />
 
+  if (field.type === 'toggle') {
+    return (
+      <div className="flex items-start justify-between gap-6 rounded-card border border-line bg-surface p-4">
+        <span>
+          <span className="block text-[0.9rem] font-semibold text-fg">{field.label}</span>
+          {field.help && (
+            <span className="mt-0.5 block text-[0.82rem] leading-snug text-fg-muted">
+              {field.help}
+            </span>
+          )}
+        </span>
+        {/* Interruptor real (checkbox) y no un div: así funciona con teclado y
+            lo anuncian los lectores de pantalla sin trabajo extra. */}
+        <label className="relative inline-flex shrink-0 cursor-pointer items-center">
+          <input
+            type="checkbox"
+            checked={Boolean(value)}
+            onChange={(e) => onChange(e.target.checked)}
+            className="peer sr-only"
+          />
+          <span className="h-6 w-11 rounded-full bg-line-strong transition-colors peer-checked:bg-lime peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-lime-strong" />
+          <span className="absolute left-0.5 size-5 rounded-full bg-card shadow transition-transform peer-checked:translate-x-5" />
+        </label>
+      </div>
+    )
+  }
+
+  if (field.type === 'select') {
+    return (
+      <div>
+        <Label htmlFor={id} help={field.help}>
+          {field.label}
+        </Label>
+        <select
+          id={id}
+          value={value ?? ''}
+          onChange={(e) => onChange(e.target.value)}
+          className={inputClass}
+        >
+          {field.options.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+      </div>
+    )
+  }
+
   if (field.type === 'textarea') {
     return (
       <div>

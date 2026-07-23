@@ -25,6 +25,8 @@ export default function ContactForm({
   const [errors, setErrors] = useState({})
   const [touched, setTouched] = useState({})
   const [status, setStatus] = useState('idle')
+  // Campo trampa: si un bot lo rellena, el servidor descarta el envio.
+  const [website, setWebsite] = useState('')
   const formRef = useRef(null)
 
   const field = (name) => ({
@@ -56,7 +58,7 @@ export default function ContactForm({
 
     setStatus('submitting')
     try {
-      await submitForm({ to, subject, data: values })
+      await submitForm({ to, subject, data: values, website })
       setStatus('success')
       setValues(empty)
       setTouched({})
@@ -79,7 +81,7 @@ export default function ContactForm({
         <div>
           <h3 className="font-display text-xl font-semibold text-fg">Solicitud registrada</h3>
           <p className="mt-2 max-w-md leading-relaxed text-fg-muted">
-            Su mensaje quedó en camino a {to}. Un miembro del equipo técnico le responde en horario
+            Su mensaje ya está en camino. Un miembro del equipo técnico le responde en horario
             laboral.
           </p>
         </div>
@@ -92,6 +94,18 @@ export default function ContactForm({
 
   return (
     <form ref={formRef} onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
+      <div aria-hidden="true" className="absolute h-px w-px overflow-hidden opacity-0">
+        <label htmlFor={`${idPrefix}-website`}>No rellene este campo</label>
+        <input
+          id={`${idPrefix}-website`}
+          type="text"
+          tabIndex={-1}
+          autoComplete="off"
+          value={website}
+          onChange={(e) => setWebsite(e.target.value)}
+        />
+      </div>
+
       <div className="grid gap-5 sm:grid-cols-2">
         <Field label="Nombre" required autoComplete="given-name" {...field('nombre')} />
         <Field label="Apellido" required autoComplete="family-name" {...field('apellido')} />

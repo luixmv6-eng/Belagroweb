@@ -3,6 +3,7 @@ import { Route, Routes, useLocation } from 'react-router-dom'
 import Nav from './components/Nav'
 import Footer from './components/Footer'
 import WhatsAppFab from './components/WhatsAppFab'
+import Popup from './components/Popup'
 import ScrollToTop from './components/ScrollToTop'
 import RouteLoader from './components/RouteLoader'
 import { isHeavyRoute, routes } from './data/site'
@@ -86,6 +87,7 @@ function PublicSite() {
 
       <Footer />
       <WhatsAppFab />
+      <Popup />
     </div>
   )
 }

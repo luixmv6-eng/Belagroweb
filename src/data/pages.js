@@ -348,4 +348,20 @@ export const pages = {
   whatsapp: {
     invite: 'Contáctate con un asesor para que te brinden más información.',
   },
+
+  /**
+   * Aviso emergente al entrar. Llega desactivado a propósito: un pop-up que
+   * aparece sin que nadie lo haya decidido es intrusivo.
+   */
+  popup: {
+    enabled: false,
+    title: 'Novedad de temporada',
+    body: 'Conozca las formulaciones disponibles para la etapa en la que está su cultivo.',
+    buttonLabel: 'Ver portafolio',
+    buttonTarget: '/portafolio-técnico',
+    /* once = una vez y no vuelve · session = una vez por visita · always = siempre */
+    frequency: 'once',
+    /* Segundos antes de que aparezca. Deja leer la página primero. */
+    delaySeconds: 3,
+  },
 }

@@ -6,8 +6,8 @@ Vive en `/admin`.
 ## Cómo funciona
 
 El sitio trae todos sus textos en `src/data/`. El panel **no reescribe esos archivos**:
-guarda aparte, en `server/data/content.json`, únicamente lo que usted cambió. Al abrir
-la web, esos cambios se superponen sobre los valores del código.
+guarda aparte únicamente lo que usted cambió. Al abrir la web, esos cambios se
+superponen sobre los valores del código.
 
 Esto tiene dos consecuencias útiles:
 
@@ -16,6 +16,22 @@ Esto tiene dos consecuencias útiles:
   fallo del panel no tumba el sitio público.
 
 El botón **Restaurar** de cada sección devuelve esa sección a los valores originales.
+
+### Dónde se guarda
+
+El servidor detecta solo dónde está corriendo y elige el almacenamiento:
+
+| Entorno       | Almacenamiento                        | Se activa cuando                |
+| ------------- | ------------------------------------- | ------------------------------- |
+| Hostinger, VPS, local | Disco (`server/data/`, `server/uploads/`) | por defecto             |
+| Vercel        | Vercel Blob                           | existe `BLOB_READ_WRITE_TOKEN`  |
+
+El mismo código sirve para los dos. Puede forzar uno con `STORAGE_DRIVER=fs` o
+`STORAGE_DRIVER=blob`.
+
+> **Por qué hacen falta dos.** En Vercel el sistema de archivos es de solo lectura
+> salvo `/tmp`, y `/tmp` es efímero y no se comparte entre instancias. Guardar ahí
+> respondería «Cambios publicados» y el contenido desaparecería sin ningún error.
 
 ## Puesta en marcha
 
@@ -56,13 +72,22 @@ Queda en `http://localhost:3000`, y el panel en `http://localhost:3000/admin`.
 ### 3. En Hostinger
 
 1. hPanel → **Node.js** → crear aplicación
-   - Versión de Node: 20 o superior
+   - Versión de Node: **20 o superior**
    - Archivo de arranque: `server/index.js`
-   - Carpeta: la raíz del proyecto
-2. Subir el proyecto **ya compilado**: ejecute `npm run build` antes de subir, e
-   incluya la carpeta `dist/`.
-3. Instalar dependencias: `npm install --omit=dev` desde el panel de Node.
-4. Variables de entorno (hPanel → su aplicación → Variables de entorno):
+   - Repositorio: el de GitHub, rama `main`
+2. Preparar la aplicación. `dist/` **no está en el repositorio** (es resultado de
+   compilar, no código fuente), así que hay que generarla en el servidor:
+
+   ```bash
+   npm run setup
+   ```
+
+   Equivale a `npm install && npm run build`.
+
+   > **No use `npm install --omit=dev`.** Vite es una dependencia de desarrollo y
+   > sin ella no se puede compilar. Instale todo.
+
+3. Variables de entorno (hPanel → su aplicación → Variables de entorno):
 
    | Variable              | Valor                                     |
    | --------------------- | ----------------------------------------- |
@@ -70,16 +95,58 @@ Queda en `http://localhost:3000`, y el panel en `http://localhost:3000/admin`.
    | `NODE_ENV`            | `production`                              |
    | `SESSION_SECRET`      | una cadena aleatoria larga (recomendado)  |
 
-5. Reiniciar la aplicación.
+4. Reiniciar la aplicación.
 
 `NODE_ENV=production` marca la cookie de sesión como `Secure`, así que solo viaja
 por HTTPS. Póngala.
 
 ### Al actualizar el sitio
 
+Tras traer cambios de GitHub hay que **volver a compilar**, o seguirá sirviéndose la
+versión anterior:
+
+```bash
+npm run setup
+```
+
+Y reiniciar la aplicación.
+
 Las carpetas `server/data/` y `server/uploads/` guardan el contenido y las imágenes
-que se cargaron desde el panel. **No las sobrescriba al subir una versión nueva**:
-están fuera del control de versiones justamente por eso.
+cargadas desde el panel. Tampoco están en el repositorio, justamente para que un
+despliegue nuevo no las pise. **No las borre al actualizar**: ahí vive todo lo que
+se editó desde el panel.
+
+### 4. En Vercel
+
+Vercel compila y despliega solo en cada push, así que no hay que ejecutar nada a
+mano. Lo que sí hay que hacer es darle un sitio donde guardar, porque su sistema de
+archivos no sirve.
+
+1. Importar el repositorio. `vercel.json` ya trae la configuración: compila con
+   `npm run build`, publica `dist/` y enruta `/api/*` a la función de `api/index.js`.
+2. **Storage → Blob → Create**, y conectarlo al proyecto. Vercel inyecta sola la
+   variable `BLOB_READ_WRITE_TOKEN`; con eso el servidor cambia a Blob por su cuenta.
+3. Variables de entorno (Settings → Environment Variables):
+
+   | Variable              | Valor                                    |
+   | --------------------- | ---------------------------------------- |
+   | `ADMIN_PASSWORD_HASH` | el hash del paso 1                       |
+   | `SESSION_SECRET`      | cadena aleatoria larga, **obligatoria**  |
+
+   `NODE_ENV` la pone Vercel sola en `production`.
+
+   `SESSION_SECRET` aquí no es opcional: cada instancia serverless generaría el suyo
+   y nadie podría mantener la sesión. El servidor se niega a arrancar sin ella y lo
+   dice claramente. Genérela con:
+
+   ```powershell
+   node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+   ```
+
+4. Volver a desplegar para que tome las variables.
+
+Las imágenes subidas quedan en Blob y se sirven desde su CDN, con URL absolutas. El
+panel las guarda tal cual, así que funciona igual que en disco.
 
 ## Qué se puede editar
 
@@ -116,6 +183,58 @@ destacada e imagen.
 
 La URL se genera sola a partir del título, pero **solo mientras esté vacía**. Si el
 artículo ya circula, cambiarla rompe los enlaces que otros hayan compartido.
+
+## Correo de los formularios
+
+Los formularios de **Contacto** y **Maquila** los envía el servidor por SMTP. A qué
+buzón llegan se decide en el panel, en **Datos de contacto → Correo que recibe los
+formularios**. Si se deja vacío, llegan al correo comercial.
+
+Ese campo no aparece en la web: es solo el destino interno.
+
+### Configurar el SMTP
+
+Sin estas variables el servidor no puede enviar. Van donde el resto (hPanel o
+Vercel → Environment Variables):
+
+| Variable        | Ejemplo               |
+| --------------- | --------------------- |
+| `SMTP_HOST`     | `smtp.hostinger.com`  |
+| `SMTP_PORT`     | `465`                 |
+| `SMTP_USER`     | `web@sudominio.com`   |
+| `SMTP_PASSWORD` | la contraseña de esa cuenta |
+| `SMTP_FROM`     | opcional; si falta, se usa `SMTP_USER` |
+
+Use una cuenta de correo **del propio dominio** como remitente. Enviar desde un
+Gmail ajeno hace que los mensajes acaben en spam.
+
+> **Si no configura SMTP no se rompe nada.** El servidor responde 501 y el
+> navegador abre el cliente de correo del visitante con el mensaje ya redactado.
+> Lo que nunca ocurre es que el formulario diga «enviado» sin haber enviado.
+
+El destinatario sale siempre del servidor, nunca de lo que manda el navegador: si
+se aceptara del cliente, cualquiera podría usar el formulario para mandar correo a
+quien quisiera.
+
+## Aviso emergente
+
+**Estructura del sitio → Aviso emergente.** Llega desactivado.
+
+Se configura el interruptor de encendido, el título, el texto, el botón (etiqueta y
+a qué página lleva, elegida de una lista), cada cuánto reaparece y cuántos segundos
+tarda en salir.
+
+Sobre la frecuencia: «una vez y no vuelve a salir» es lo recomendable. Repetirlo en
+cada visita cansa y resta credibilidad al aviso.
+
+## Modo claro y oscuro
+
+La web **siempre arranca en claro**, sin seguir la preferencia del sistema
+operativo. La identidad de Belagro se construyó sobre fondo claro y quien entra por
+primera vez debe verla así.
+
+El modo oscuro sigue disponible desde el botón de la barra superior, y esa elección
+se recuerda: quien lo active lo verá oscuro las siguientes veces.
 
 ## Comprobación del esquema
 

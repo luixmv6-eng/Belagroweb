@@ -1,30 +1,42 @@
 /**
  * Envío de formularios.
  *
- * Si define VITE_FORM_ENDPOINT (Formspree, Getform, una Lambda propia, etc.)
- * el formulario hace POST allí. Si no la define, se abre el cliente de correo
- * del usuario con el mensaje ya redactado, de modo que el formulario nunca
- * queda en un "gracias" falso que no envía nada.
+ * Primero se intenta `/api/contact`, que manda el correo desde el servidor al
+ * destinatario configurado en el panel. Si el servidor responde 501 (no hay SMTP
+ * configurado) o no hay servidor, se abre el cliente de correo del visitante.
+ *
+ * Nunca se responde "enviado" sin haber enviado: si el correo falla de verdad,
+ * la función lanza y el formulario muestra el error.
  */
-export async function submitForm({ to, subject, data }) {
-  const endpoint = import.meta.env.VITE_FORM_ENDPOINT
-
-  if (endpoint) {
-    const res = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({ _subject: subject, _to: to, ...data }),
-    })
-    if (!res.ok) throw new Error('No fue posible enviar el formulario.')
-    return { mode: 'endpoint' }
+export async function submitForm({ to, subject, data, website = '' }) {
+  const openMailClient = () => {
+    const body = Object.entries(data)
+      .map(([k, v]) => `${k}: ${v}`)
+      .join('\n')
+    window.location.href = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+    return { mode: 'mailto' }
   }
 
-  const body = Object.entries(data)
-    .map(([k, v]) => `${k}: ${v}`)
-    .join('\n')
+  let res
+  try {
+    res = await fetch('/api/contact', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ subject, fields: data, replyTo: data.email, website }),
+    })
+  } catch {
+    // Sin red hacia el servidor (sitio servido como estático, API caída).
+    return openMailClient()
+  }
 
-  window.location.href = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
-  return { mode: 'mailto' }
+  if (res.ok) return { mode: 'servidor' }
+
+  // 501: el servidor está, pero no tiene SMTP. Es el caso previsto para caer al
+  // cliente de correo. Cualquier otro código sí es un fallo que hay que mostrar.
+  if (res.status === 501 || res.status === 404) return openMailClient()
+
+  const payload = await res.json().catch(() => null)
+  throw new Error(payload?.error || 'No fue posible enviar el formulario.')
 }
 
 export const validators = {

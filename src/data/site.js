@@ -16,6 +16,12 @@ export const site = {
   phoneRaw: '573102592242',
   emailComercial: 'pamejia@agricolas.co',
   emailPqrs: 'contactanos.belagro@agricolas.co',
+  /**
+   * A dónde llegan los formularios de contacto y maquila. Se separa del correo
+   * comercial porque el que se publica en la web y el que atiende las solicitudes
+   * no tienen por qué ser el mismo. Vacío = se usa el comercial.
+   */
+  formRecipient: '',
   linkedin: 'https://www.linkedin.com/company/belagro-fertilizantes-liquidoss/',
   whatsappMessage: 'Hola Belagro, quiero asesoría técnica sobre fertilizantes líquidos.',
   backedBy: 'Castilla Agrícola',
@@ -77,6 +83,27 @@ export const routes = {
   pqrs: '/contact-1',
   privacy: '/política-de-privacidad',
 }
+
+/**
+ * Destinos a los que puede apuntar un botón del sitio (hoy, el del pop-up).
+ * Alimenta la lista desplegable del panel, para que quien lo configure elija de
+ * una lista en vez de escribir una ruta a mano y equivocarse.
+ */
+export const linkTargets = [
+  { value: routes.home, label: 'Inicio' },
+  { value: routes.company, label: 'Nuestra compañía' },
+  { value: routes.fieldSupport, label: 'Acompañamiento en campo' },
+  { value: routes.productDev, label: 'Desarrollo de productos' },
+  { value: routes.maquila, label: 'Maquila industrial' },
+  { value: routes.portfolio, label: 'Portafolio técnico' },
+  { value: routes.stageRooting, label: 'Etapa: establecimiento y enraizamiento' },
+  { value: routes.stageVegetative, label: 'Etapa: desarrollo vegetativo' },
+  { value: routes.stageRipening, label: 'Etapa: maduración' },
+  { value: routes.blog, label: 'Academia' },
+  { value: routes.contact, label: 'Contacto' },
+  { value: routes.pqrs, label: 'PQRS' },
+  { value: routes.privacy, label: 'Política de privacidad' },
+]
 
 /**
  * Rutas "pesadas": las que traen bastantes imagenes o secciones largas y por

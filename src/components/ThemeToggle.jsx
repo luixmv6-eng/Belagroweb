@@ -1,33 +1,27 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Moon, Sun } from '@phosphor-icons/react'
 
 const STORAGE_KEY = 'belagro-theme'
 
-function systemTheme() {
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
-}
-
+/**
+ * La web arranca SIEMPRE en modo claro.
+ *
+ * No se sigue `prefers-color-scheme`: la identidad de Belagro se construyó sobre
+ * fondo claro, y quien entra por primera vez debe verla así. El modo oscuro está
+ * disponible, pero es una elección explícita del visitante.
+ *
+ * La única excepción es haber elegido antes: esa preferencia se respeta y manda
+ * sobre el arranque en claro.
+ */
 export function initTheme() {
   const stored = localStorage.getItem(STORAGE_KEY)
-  document.documentElement.dataset.theme = stored || systemTheme()
+  document.documentElement.dataset.theme = stored === 'dark' ? 'dark' : 'light'
 }
 
 export default function ThemeToggle({ className = '' }) {
   const [theme, setTheme] = useState(() =>
     typeof document === 'undefined' ? 'light' : document.documentElement.dataset.theme || 'light',
   )
-
-  useEffect(() => {
-    const mq = window.matchMedia('(prefers-color-scheme: dark)')
-    const onChange = (e) => {
-      if (localStorage.getItem(STORAGE_KEY)) return
-      const next = e.matches ? 'dark' : 'light'
-      document.documentElement.dataset.theme = next
-      setTheme(next)
-    }
-    mq.addEventListener('change', onChange)
-    return () => mq.removeEventListener('change', onChange)
-  }, [])
 
   const toggle = () => {
     const next = theme === 'dark' ? 'light' : 'dark'
