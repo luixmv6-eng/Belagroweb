@@ -144,6 +144,19 @@ app.get('/api/health', (req, res) => {
     /* Solo los NOMBRES que el servidor ve, nunca sus valores. Distingue "no las
        añadí" de "las añadí en el entorno equivocado". */
     variablesDetectadas: EXPECTED_VARS.filter((v) => process.env[v]),
+    /* Definida pero vacía: aparece en el panel de Vercel y aun así no sirve. */
+    variablesVacias: EXPECTED_VARS.filter((v) => v in process.env && !process.env[v]?.trim()),
+    /* Todos los nombres que NO son del sistema. Si aquí sale "ADMIN_PASWORD_HASH"
+       o "ADMIN_PASSWORD_HASH " con espacio, ahí está la errata. Solo nombres. */
+    otrasVariables: Object.keys(process.env)
+      .filter(
+        (k) =>
+          !/^(VERCEL|AWS|LAMBDA|NODE|NPM|PATH|HOME|HOSTNAME|PWD|SHLVL|_|TZ|LANG|TERM|EDGE|NEXT|CI|PORT|TMPDIR|INIT_CWD|COLOR|LC_)/i.test(
+            k,
+          ),
+      )
+      .sort()
+      .slice(0, 60),
     // production | preview | development. Si aquí pone "preview" y usted añadió
     // las variables solo a Production, ese es el desajuste.
     entornoVercel: process.env.VERCEL_ENV ?? null,
