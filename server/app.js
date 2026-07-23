@@ -147,6 +147,13 @@ app.get('/api/health', (req, res) => {
     // production | preview | development. Si aquí pone "preview" y usted añadió
     // las variables solo a Production, ese es el desajuste.
     entornoVercel: process.env.VERCEL_ENV ?? null,
+    /* Qué proyecto está sirviendo esto. Si no coincide con aquel donde añadió las
+       variables, ahí está el problema: dos proyectos importados del mismo repo. */
+    proyecto: {
+      url: process.env.VERCEL_PROJECT_PRODUCTION_URL ?? process.env.VERCEL_URL ?? null,
+      repositorio: process.env.VERCEL_GIT_REPO_SLUG ?? null,
+      rama: process.env.VERCEL_GIT_COMMIT_REF ?? null,
+    },
     // Marca de tiempo: si no cambia entre recargas, está viendo caché.
     momento: new Date().toISOString(),
   })
