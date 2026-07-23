@@ -20,7 +20,13 @@ const ready = storage.init().catch((err) => {
 
 export default async function handler(req, res) {
   const problem = await ready
-  if (problem instanceof Error) {
+
+  // /api/health tiene que responder AUNQUE el almacén esté mal configurado: es
+  // justo el momento en que hace falta saber qué ve el servidor. Si se bloqueara
+  // aquí, el diagnóstico solo funcionaría cuando ya no hace falta.
+  const isHealth = (req.url || '').startsWith('/api/health')
+
+  if (problem instanceof Error && !isHealth) {
     res.statusCode = 500
     res.setHeader('Content-Type', 'application/json; charset=utf-8')
     res.end(JSON.stringify({ error: problem.message }))

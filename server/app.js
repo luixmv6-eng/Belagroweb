@@ -107,6 +107,30 @@ app.get('/api/auth/me', async (req, res) => {
 })
 
 /* ---------------------------------------------------------------------------
+   Diagnóstico
+
+   Dice qué configuración ve el servidor, para no tener que adivinar por qué algo
+   no funciona tras un despliegue. Solo devuelve SÍ/NO: ningún valor, ninguna
+   clave, ningún correo. Saber que una variable está puesta no le sirve de nada a
+   un atacante; a quien despliega le ahorra media hora.
+--------------------------------------------------------------------------- */
+
+app.get('/api/health', (req, res) => {
+  const smtp = isMailerConfigured()
+  res.json({
+    almacenamiento: storage.name,
+    listo: {
+      almacenamiento: storage.name !== 'Vercel Blob' || Boolean(process.env.BLOB_READ_WRITE_TOKEN),
+      contrasenaPanel: Boolean(process.env.ADMIN_PASSWORD_HASH),
+      // En serverless el secreto no se puede generar al vuelo: debe venir puesto.
+      secretoSesion: Boolean(process.env.SESSION_SECRET) || storage.name === 'disco',
+      envioDeCorreo: smtp,
+    },
+    entorno: process.env.VERCEL ? 'Vercel' : 'servidor propio',
+  })
+})
+
+/* ---------------------------------------------------------------------------
    Contenido
 
    `content.json` guarda SOLO lo que el usuario cambió. El sitio combina esos
