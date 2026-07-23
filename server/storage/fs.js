@@ -20,8 +20,23 @@ export const name = 'disco'
 export const servesUploads = true
 
 export async function init() {
-  await fs.mkdir(DATA_DIR, { recursive: true })
-  await fs.mkdir(UPLOAD_DIR, { recursive: true })
+  try {
+    await fs.mkdir(DATA_DIR, { recursive: true })
+    await fs.mkdir(UPLOAD_DIR, { recursive: true })
+  } catch (err) {
+    // ENOENT/EROFS/EACCES aquí casi siempre significan un entorno serverless con
+    // el disco de solo lectura. El mensaje del sistema no lo explica, así que se
+    // traduce a algo accionable.
+    if (['ENOENT', 'EROFS', 'EACCES', 'EPERM'].includes(err.code)) {
+      throw new Error(
+        `No se puede escribir en ${DATA_DIR} (${err.code}). Si esto corre en un ` +
+          'entorno sin disco persistente (Vercel, Lambda, Cloud Run), configure un ' +
+          'almacén externo: conecte Vercel Blob al proyecto para que exista ' +
+          'BLOB_READ_WRITE_TOKEN.',
+      )
+    }
+    throw err
+  }
 }
 
 export async function readJson(file, fallback) {

@@ -16,7 +16,18 @@
  */
 
 const forced = process.env.STORAGE_DRIVER
-const useBlob = forced === 'blob' || (!forced && Boolean(process.env.BLOB_READ_WRITE_TOKEN))
+const onServerless = Boolean(process.env.VERCEL)
+const hasBlobToken = Boolean(process.env.BLOB_READ_WRITE_TOKEN)
+
+/*
+ * En Vercel se elige Blob SIEMPRE, aunque falte el token.
+ *
+ * Parece contraintuitivo, pero es lo correcto: si no hay token, `blob.init()`
+ * falla diciendo exactamente qué falta y cómo arreglarlo. Caer al controlador de
+ * disco daría un "ENOENT: mkdir '/var/task/server/data'", que no le dice nada a
+ * nadie, porque en Lambda el sistema de archivos es de solo lectura.
+ */
+const useBlob = forced === 'blob' || (!forced && (hasBlobToken || onServerless))
 
 const driver = useBlob ? await import('./blob.js') : await import('./fs.js')
 

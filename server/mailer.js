@@ -28,6 +28,15 @@ function getTransport() {
       // 465 es SSL directo; 587 empieza en claro y sube a TLS con STARTTLS.
       secure: port === 465,
       auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASSWORD },
+
+      /* Tiempos de espera cortos, pensados para serverless.
+         En Vercel la función tiene un límite (10 s en el plan gratuito) y al
+         agotarse la corta sin dejar responder: el visitante vería un error
+         genérico del navegador. Con estos topes el envío falla antes, el
+         servidor responde 502 y el formulario muestra un mensaje entendible. */
+      connectionTimeout: 7000,
+      greetingTimeout: 5000,
+      socketTimeout: 7000,
     })
   }
   return transport
