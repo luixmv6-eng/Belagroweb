@@ -115,8 +115,22 @@ app.get('/api/auth/me', async (req, res) => {
    un atacante; a quien despliega le ahorra media hora.
 --------------------------------------------------------------------------- */
 
+const EXPECTED_VARS = [
+  'BLOB_READ_WRITE_TOKEN',
+  'ADMIN_PASSWORD_HASH',
+  'SESSION_SECRET',
+  'SMTP_HOST',
+  'SMTP_PORT',
+  'SMTP_USER',
+  'SMTP_PASSWORD',
+  'SMTP_FROM',
+]
+
 app.get('/api/health', (req, res) => {
-  const smtp = isMailerConfigured()
+  // Sin caché: si la CDN guardara esta respuesta, seguiría mostrando el estado
+  // anterior tras corregir la configuración y parecería que nada cambia.
+  res.set('Cache-Control', 'no-store, max-age=0')
+
   res.json({
     almacenamiento: storage.name,
     listo: {
@@ -124,9 +138,17 @@ app.get('/api/health', (req, res) => {
       contrasenaPanel: Boolean(process.env.ADMIN_PASSWORD_HASH),
       // En serverless el secreto no se puede generar al vuelo: debe venir puesto.
       secretoSesion: Boolean(process.env.SESSION_SECRET) || storage.name === 'disco',
-      envioDeCorreo: smtp,
+      envioDeCorreo: isMailerConfigured(),
     },
     entorno: process.env.VERCEL ? 'Vercel' : 'servidor propio',
+    /* Solo los NOMBRES que el servidor ve, nunca sus valores. Distingue "no las
+       añadí" de "las añadí en el entorno equivocado". */
+    variablesDetectadas: EXPECTED_VARS.filter((v) => process.env[v]),
+    // production | preview | development. Si aquí pone "preview" y usted añadió
+    // las variables solo a Production, ese es el desajuste.
+    entornoVercel: process.env.VERCEL_ENV ?? null,
+    // Marca de tiempo: si no cambia entre recargas, está viendo caché.
+    momento: new Date().toISOString(),
   })
 })
 
