@@ -19,6 +19,20 @@ export const name = 'Vercel Blob'
 /** Blob devuelve URL absolutas y públicas: no hay que servirlas desde el servidor. */
 export const servesUploads = false
 
+/**
+ * Localiza el token.
+ *
+ * Vercel permite conectar un almacén con prefijo, y entonces la variable se
+ * llama `MIPREFIJO_BLOB_READ_WRITE_TOKEN`. El SDK solo mira el nombre sin
+ * prefijo, así que aquí se busca cualquiera que termine igual y se le pasa
+ * explícitamente en cada llamada.
+ */
+export function findToken() {
+  if (process.env.BLOB_READ_WRITE_TOKEN) return process.env.BLOB_READ_WRITE_TOKEN
+  const key = Object.keys(process.env).find((k) => k.endsWith('BLOB_READ_WRITE_TOKEN'))
+  return key ? process.env[key] : null
+}
+
 let blob = null
 
 async function lib() {
@@ -35,9 +49,10 @@ async function lib() {
 }
 
 export async function init() {
-  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+  if (!findToken()) {
     throw new Error(
-      'Falta BLOB_READ_WRITE_TOKEN. En Vercel: Storage > Blob > conectar al proyecto.',
+      'Falta BLOB_READ_WRITE_TOKEN. En Vercel: Storage > Blob > Projects > Connect Project. ' +
+        'Vercel añade esa variable sola; no hay que escribirla a mano ni renombrarla.',
     )
   }
   await lib()
@@ -46,7 +61,7 @@ export async function init() {
 /** Localiza un blob por su ruta exacta. `list` es la vía fiable para obtener su URL. */
 async function findBlob(pathname) {
   const { list } = await lib()
-  const { blobs } = await list({ prefix: pathname, limit: 1 })
+  const { blobs } = await list({ prefix: pathname, limit: 1, token: findToken() })
   return blobs.find((b) => b.pathname === pathname) ?? null
 }
 
@@ -67,6 +82,7 @@ export async function readJson(file, fallback) {
 export async function writeJson(file, value) {
   const { put } = await lib()
   await put(DATA_PREFIX + file, JSON.stringify(value, null, 2), {
+    token: findToken(),
     access: 'public',
     contentType: 'application/json',
     // Ruta estable y sin caché: este archivo se sobrescribe constantemente.
@@ -80,6 +96,7 @@ export async function saveUpload(buffer, ext, mime) {
   const { put } = await lib()
   const filename = `${Date.now()}-${crypto.randomBytes(6).toString('hex')}${ext}`
   const result = await put(UPLOAD_PREFIX + filename, buffer, {
+    token: findToken(),
     access: 'public',
     contentType: mime,
     addRandomSuffix: false,
@@ -89,7 +106,7 @@ export async function saveUpload(buffer, ext, mime) {
 
 export async function listUploads() {
   const { list } = await lib()
-  const { blobs } = await list({ prefix: UPLOAD_PREFIX })
+  const { blobs } = await list({ prefix: UPLOAD_PREFIX, token: findToken() })
   return blobs
     .map((b) => ({
       url: b.url,
@@ -104,11 +121,11 @@ export async function deleteUpload(nameOrUrl) {
   const { del } = await lib()
   // `del` acepta la URL completa; si llega solo el nombre, se busca primero.
   if (nameOrUrl.startsWith('http')) {
-    await del(nameOrUrl).catch(() => {})
+    await del(nameOrUrl, { token: findToken() }).catch(() => {})
     return
   }
   const found = await findBlob(UPLOAD_PREFIX + nameOrUrl)
-  if (found) await del(found.url).catch(() => {})
+  if (found) await del(found.url, { token: findToken() }).catch(() => {})
 }
 
 /**

@@ -11,6 +11,7 @@ import {
   verifyPassword,
 } from './auth.js'
 import * as storage from './storage/index.js'
+import { findToken as findBlobToken } from './storage/blob.js'
 import { isConfigured as isMailerConfigured, sendContactEmail } from './mailer.js'
 // Valores por defecto del sitio: la misma fuente que usa el frontend, para que
 // el destinatario del formulario no se defina en dos sitios distintos.
@@ -134,7 +135,7 @@ app.get('/api/health', (req, res) => {
   res.json({
     almacenamiento: storage.name,
     listo: {
-      almacenamiento: storage.name !== 'Vercel Blob' || Boolean(process.env.BLOB_READ_WRITE_TOKEN),
+      almacenamiento: storage.name !== 'Vercel Blob' || Boolean(findBlobToken()),
       contrasenaPanel: Boolean(process.env.ADMIN_PASSWORD_HASH),
       // En serverless el secreto no se puede generar al vuelo: debe venir puesto.
       secretoSesion: Boolean(process.env.SESSION_SECRET) || storage.name === 'disco',
