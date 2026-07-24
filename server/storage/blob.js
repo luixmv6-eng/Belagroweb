@@ -69,8 +69,11 @@ export async function readJson(file, fallback) {
   try {
     const found = await findBlob(DATA_PREFIX + file)
     if (!found) return fallback
-    // `no-store`: tras guardar hay que leer el valor nuevo, no el de la CDN.
-    const res = await fetch(found.url, { cache: 'no-store' })
+    /* Se pide con marca de tiempo y `no-store`. La URL del blob es estable, así
+       que sin romper la caché se podría servir el contenido anterior justo
+       después de guardar, y parecería que el panel no guardó nada. */
+    const url = `${found.url}${found.url.includes('?') ? '&' : '?'}v=${Date.now()}`
+    const res = await fetch(url, { cache: 'no-store' })
     if (!res.ok) return fallback
     return await res.json()
   } catch (err) {
@@ -85,10 +88,11 @@ export async function writeJson(file, value) {
     token: findToken(),
     access: 'public',
     contentType: 'application/json',
-    // Ruta estable y sin caché: este archivo se sobrescribe constantemente.
+    // Ruta estable: este archivo se sobrescribe constantemente y su URL no debe
+    // cambiar. La frescura se resuelve al leer, no con cabeceras de caché: la API
+    // puede rechazar valores fuera de rango y el guardado fallaría entero.
     addRandomSuffix: false,
     allowOverwrite: true,
-    cacheControlMaxAge: 0,
   })
 }
 

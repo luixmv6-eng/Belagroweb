@@ -127,12 +127,12 @@ const EXPECTED_VARS = [
   'SMTP_FROM',
 ]
 
-app.get('/api/health', (req, res) => {
+app.get('/api/health', async (req, res) => {
   // Sin caché: si la CDN guardara esta respuesta, seguiría mostrando el estado
   // anterior tras corregir la configuración y parecería que nada cambia.
   res.set('Cache-Control', 'no-store, max-age=0')
 
-  res.json({
+  const basico = {
     almacenamiento: storage.name,
     listo: {
       almacenamiento: storage.name !== 'Vercel Blob' || Boolean(findBlobToken()),
@@ -142,35 +142,48 @@ app.get('/api/health', (req, res) => {
       envioDeCorreo: isMailerConfigured(),
     },
     entorno: process.env.VERCEL ? 'Vercel' : 'servidor propio',
-    /* Solo los NOMBRES que el servidor ve, nunca sus valores. Distingue "no las
-       añadí" de "las añadí en el entorno equivocado". */
-    variablesDetectadas: EXPECTED_VARS.filter((v) => process.env[v]),
-    /* Definida pero vacía: aparece en el panel de Vercel y aun así no sirve. */
-    variablesVacias: EXPECTED_VARS.filter((v) => v in process.env && !process.env[v]?.trim()),
-    /* Todos los nombres que NO son del sistema. Si aquí sale "ADMIN_PASWORD_HASH"
-       o "ADMIN_PASSWORD_HASH " con espacio, ahí está la errata. Solo nombres. */
-    otrasVariables: Object.keys(process.env)
-      .filter(
-        (k) =>
-          !/^(VERCEL|AWS|LAMBDA|NODE|NPM|PATH|HOME|HOSTNAME|PWD|SHLVL|_|TZ|LANG|TERM|EDGE|NEXT|CI|PORT|TMPDIR|INIT_CWD|COLOR|LC_)/i.test(
-            k,
-          ),
-      )
-      .sort()
-      .slice(0, 60),
-    // production | preview | development. Si aquí pone "preview" y usted añadió
-    // las variables solo a Production, ese es el desajuste.
-    entornoVercel: process.env.VERCEL_ENV ?? null,
-    /* Qué proyecto está sirviendo esto. Si no coincide con aquel donde añadió las
-       variables, ahí está el problema: dos proyectos importados del mismo repo. */
-    proyecto: {
-      url: process.env.VERCEL_PROJECT_PRODUCTION_URL ?? process.env.VERCEL_URL ?? null,
-      repositorio: process.env.VERCEL_GIT_REPO_SLUG ?? null,
-      rama: process.env.VERCEL_GIT_COMMIT_REF ?? null,
-    },
     // Marca de tiempo: si no cambia entre recargas, está viendo caché.
     momento: new Date().toISOString(),
-  })
+  }
+
+  /*
+   * El detalle solo para quien ha iniciado sesión.
+   *
+   * Sirve para diagnosticar un despliegue (nombres mal escritos, variables en el
+   * entorno equivocado, dos proyectos del mismo repo), pero son nombres de
+   * configuración interna y un sitio público no tiene por qué publicarlos.
+   *
+   * Los cuatro sí/no de arriba sí quedan abiertos: hacen falta justo cuando el
+   * almacén está mal configurado y por eso no se puede iniciar sesión.
+   */
+  let detalle = null
+  try {
+    if (await isAuthenticated(req)) {
+      detalle = {
+        variablesDetectadas: EXPECTED_VARS.filter((v) => process.env[v]),
+        variablesVacias: EXPECTED_VARS.filter((v) => v in process.env && !process.env[v]?.trim()),
+        otrasVariables: Object.keys(process.env)
+          .filter(
+            (k) =>
+              !/^(VERCEL|AWS|LAMBDA|NODE|NPM|PATH|HOME|HOSTNAME|PWD|SHLVL|_|TZ|LANG|TERM|EDGE|NEXT|CI|PORT|TMPDIR|INIT_CWD|COLOR|LC_)/i.test(
+                k,
+              ),
+          )
+          .sort()
+          .slice(0, 60),
+        entornoVercel: process.env.VERCEL_ENV ?? null,
+        proyecto: {
+          url: process.env.VERCEL_PROJECT_PRODUCTION_URL ?? process.env.VERCEL_URL ?? null,
+          repositorio: process.env.VERCEL_GIT_REPO_SLUG ?? null,
+          rama: process.env.VERCEL_GIT_COMMIT_REF ?? null,
+        },
+      }
+    }
+  } catch {
+    /* sin sesión válida no hay detalle, y no es un error */
+  }
+
+  res.json(detalle ? { ...basico, detalle } : basico)
 })
 
 /* ---------------------------------------------------------------------------
@@ -189,7 +202,14 @@ app.put('/api/content', requireAuth, async (req, res) => {
   if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) {
     return res.status(400).json({ error: 'Se esperaba un objeto de contenido' })
   }
-  await storage.writeJson('content.json', req.body)
+  try {
+    await storage.writeJson('content.json', req.body)
+  } catch (err) {
+    // Sin esto Express devuelve un 500 vacío y quien edita solo ve "Error 500",
+    // sin ninguna pista de si falló el almacén, el permiso o el tamaño.
+    console.error('[contenido] fallo al guardar:', err)
+    return res.status(500).json({ error: `No se pudo guardar: ${err.message}` })
+  }
   return res.json({ ok: true })
 })
 
@@ -210,7 +230,12 @@ app.put('/api/posts', requireAuth, async (req, res) => {
   if (new Set(slugs).size !== slugs.length) {
     return res.status(400).json({ error: 'Hay dos artículos con la misma URL (slug)' })
   }
-  await storage.writeJson('posts.json', { posts })
+  try {
+    await storage.writeJson('posts.json', { posts })
+  } catch (err) {
+    console.error('[academia] fallo al guardar:', err)
+    return res.status(500).json({ error: `No se pudieron guardar los artículos: ${err.message}` })
+  }
   return res.json({ ok: true })
 })
 

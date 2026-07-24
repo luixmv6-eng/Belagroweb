@@ -116,6 +116,48 @@ cargadas desde el panel. Tampoco están en el repositorio, justamente para que u
 despliegue nuevo no las pise. **No las borre al actualizar**: ahí vive todo lo que
 se editó desde el panel.
 
+### Nombres exactos de las variables
+
+Los nombres distinguen mayúsculas y deben escribirse **tal cual**. `adminhash` no
+es `ADMIN_PASSWORD_HASH`: el panel de la plataforma la mostrará igual, pero el
+servidor no la encontrará y el error no dirá que el nombre está mal.
+
+```
+ADMIN_PASSWORD_HASH
+SESSION_SECRET
+BLOB_READ_WRITE_TOKEN
+SMTP_HOST
+SMTP_PORT
+SMTP_USER
+SMTP_PASSWORD
+SMTP_FROM
+```
+
+### Comprobar un despliegue
+
+`/api/health` dice qué ve el servidor:
+
+```json
+{
+  "almacenamiento": "Vercel Blob",
+  "listo": {
+    "almacenamiento": true,
+    "contrasenaPanel": true,
+    "secretoSesion": true,
+    "envioDeCorreo": false
+  }
+}
+```
+
+Los tres primeros tienen que estar en `true` para que el panel funcione. El cuarto
+solo afecta al formulario de contacto.
+
+Con sesión iniciada añade un bloque `detalle` con los nombres de variable que
+recibe el servidor: sirve para cazar erratas y variables puestas en el entorno
+equivocado. Sin sesión no se publica, porque es configuración interna.
+
+Si `momento` no cambia al recargar, está viendo una respuesta cacheada.
+
 ### 4. En Vercel
 
 Vercel compila y despliega solo en cada push, así que no hay que ejecutar nada a
@@ -124,8 +166,22 @@ archivos no sirve.
 
 1. Importar el repositorio. `vercel.json` ya trae la configuración: compila con
    `npm run build`, publica `dist/` y enruta `/api/*` a la función de `api/index.js`.
-2. **Storage → Blob → Create**, y conectarlo al proyecto. Vercel inyecta sola la
-   variable `BLOB_READ_WRITE_TOKEN`; con eso el servidor cambia a Blob por su cuenta.
+2. **Storage → Blob → Create**, y conectarlo al proyecto.
+
+   > **Dos trampas aquí, las dos comprobadas en un despliegue real.**
+   >
+   > **El campo de prefijo.** Al conectar, Vercel ofrece un *Environment Variables
+   > Prefix*. **Déjelo vacío.** Si escribe ahí `BLOB_READ_WRITE_TOKEN` creyendo que
+   > es el nombre de la variable, acabará con `BLOB_READ_WRITE_TOKEN_STORE_ID` y
+   > compañía, y el token de verdad no existirá.
+   >
+   > **El token puede no crearse solo.** Según la versión, conectar el almacén crea
+   > `BLOB_STORE_ID` y `BLOB_WEBHOOK_PUBLIC_KEY` pero **no** el token de escritura.
+   > Compruébelo en Settings → Environment Variables. Si falta, ábralo desde
+   > Storage → su Blob, copie el valor que empieza por `vercel_blob_rw_` y añádalo
+   > a mano como `BLOB_READ_WRITE_TOKEN`.
+
+   El servidor acepta el token con prefijo o sin él, pero necesita que exista.
 3. Variables de entorno (Settings → Environment Variables):
 
    | Variable              | Valor                                    |
